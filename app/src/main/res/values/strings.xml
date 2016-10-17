@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">PaintViewDemo</string>
+
+    <string name="menu_title_share">Share</string>
+</resources>
