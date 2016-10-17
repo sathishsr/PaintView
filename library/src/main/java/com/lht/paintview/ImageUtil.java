@@ -2,6 +2,12 @@ package com.lht.paintview;
 
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
+import android.text.TextUtils;
+
+import java.io.BufferedOutputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 
 /**
  * Created by lht on 16/10/17.
@@ -23,5 +29,32 @@ public class ImageUtil {
         matrix.postScale(scale, scale);
         // 得到新的图片
         return Bitmap.createBitmap(bm, 0, 0, width, height, matrix, true);
+    }
+
+    public static boolean saveBitmap(Bitmap bitmap, String path, boolean recyle) {
+        if (bitmap == null || TextUtils.isEmpty(path)) {
+            return false;
+        }
+
+        BufferedOutputStream bos = null;
+        try {
+            FileOutputStream fos = new FileOutputStream(path);
+            bos = new BufferedOutputStream(fos);
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 80, bos);
+
+            return true;
+        } catch (FileNotFoundException e) {
+            return false;
+        } finally {
+            if (bos != null) {
+                try {
+                    bos.close();
+                } catch (IOException e) {
+                }
+            }
+            if (recyle) {
+                bitmap.recycle();
+            }
+        }
     }
 }
