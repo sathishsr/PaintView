@@ -2,6 +2,7 @@ package com.lht.paintviewdemo;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -40,6 +41,15 @@ public class MainActivity extends AppCompatActivity {
         };
         mWebView.setWebChromeClient(WebChromeClient);
         mWebView.loadUrl("https://www.google.com");
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_BACK && mWebView.canGoBack()) {
+            mWebView.goBack();
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
     }
 
     @Override
