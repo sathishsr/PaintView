@@ -52,7 +52,7 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_share:
-                PaintActivity.start(this, mWebView.captureWebViewVisibleSize(0.8f));
+                PaintActivity.start(this, mWebView.captureWebViewVisibleSize(1f));
                 break;
         }
         return true;

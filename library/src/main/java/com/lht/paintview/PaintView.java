@@ -221,13 +221,16 @@ public class PaintView extends View {
             bitmap = ImageUtil.zoomImg(bitmap, mWidth, mHeight);
         }
 
+        float left = (mWidth - bitmap.getWidth()) / 2;
+        float top = (mHeight - bitmap.getHeight()) / 2;
         //缩放后
-        if (bitmap.getWidth() < mWidth) {
-            float left = (mWidth - bitmap.getWidth()) / 2;
+        if (bitmap.getWidth() < mWidth && bitmap.getHeight() < mHeight) {
+            mCanvas.drawBitmap(bitmap, left, top, mBitmapPaint);
+        }
+        else if (bitmap.getWidth() < mWidth) {
             mCanvas.drawBitmap(bitmap, left, 0, mBitmapPaint);
         }
         else if (bitmap.getHeight() < mHeight) {
-            float top = (mHeight - bitmap.getHeight()) / 2;
             mCanvas.drawBitmap(bitmap, 0, top, mBitmapPaint);
         }
     }
