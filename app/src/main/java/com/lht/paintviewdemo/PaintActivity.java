@@ -10,6 +10,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.Toast;
 
 import com.lht.paintview.PaintView;
 import com.lht.paintviewdemo.util.ImageUtil;
@@ -23,7 +24,7 @@ public class PaintActivity extends AppCompatActivity implements View.OnClickList
 
     PaintView mPaintView;
 
-    ImageButton mBtnColor, mBtnStroke, mBtnUndo;
+    ImageButton mBtnColor, mBtnStroke, mBtnText, mBtnUndo;
     boolean bRedOrBlue = true, bWriteOrPaint = true;
 
     @Override
@@ -43,6 +44,8 @@ public class PaintActivity extends AppCompatActivity implements View.OnClickList
         mBtnColor.setOnClickListener(this);
         mBtnStroke = (ImageButton)findViewById(R.id.btn_stroke);
         mBtnStroke.setOnClickListener(this);
+        mBtnText = (ImageButton)findViewById(R.id.btn_text);
+        mBtnText.setOnClickListener(this);
         mBtnUndo = (ImageButton)findViewById(R.id.btn_undo);
         mBtnUndo.setOnClickListener(this);
     }
@@ -64,6 +67,10 @@ public class PaintActivity extends AppCompatActivity implements View.OnClickList
                 break;
             case R.id.btn_stroke:
                 strokeChanged();
+                break;
+            case R.id.btn_text:
+                //TODO
+                Toast.makeText(this, "TODO", Toast.LENGTH_LONG).show();
                 break;
             case R.id.btn_undo:
                 mPaintView.undo();

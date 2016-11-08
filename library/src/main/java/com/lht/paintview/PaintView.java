@@ -206,7 +206,7 @@ public class PaintView extends View {
         float curLength = getDistance(event);
 
         //拖动
-        if (Math.abs(mLength - curLength) < 10) {
+        if (Math.abs(mLength - curLength) < 5) {
             mode = MODE.DRAG;
             mDistanceX = curCenterX - mCenterX;
             mDistanceY = curCenterY - mCenterY;
