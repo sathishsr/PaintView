@@ -33,7 +33,7 @@ public class PaintView extends View {
     private int mWidth, mHeight;
 
     //背景色
-    final static int BG_COLOR = Color.WHITE;
+    private int mBgColor = Color.WHITE;
     //绘制标记Paint
     private Paint mPaint;
     //绘制背景图Paint
@@ -103,6 +103,9 @@ public class PaintView extends View {
         initCanvas();
     }
 
+    /**
+     * 初始化画笔
+     */
     private void initPaint() {
         mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         mPaint.setAntiAlias(true);
@@ -112,10 +115,13 @@ public class PaintView extends View {
         mPaint.setStrokeCap(Paint.Cap.ROUND);// 形状
     }
 
+    /**
+     * 初始化整体bitmap
+     */
     private void initCanvas() {
         mBitmap = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.RGB_565);
         mCanvas = new Canvas(mBitmap);
-        mCanvas.drawColor(BG_COLOR);
+        mCanvas.drawColor(mBgColor);
     }
 
     @Override
@@ -129,6 +135,7 @@ public class PaintView extends View {
                 break;
         }
 
+        canvas.drawColor(mBgColor);
         canvas.drawBitmap(mBitmap, mMatrix, null);
 
         for (DrawShape shape : mDrawShapes) {
@@ -181,10 +188,21 @@ public class PaintView extends View {
         }
     }
 
-    private void moveDoubleFinger(MotionEvent event) {
+    //两点按下
+    private void doubleFingerDown(MotionEvent event) {
+        mCenterX = (event.getX(0) + event.getX(1)) / 2;
+        mCenterY = (event.getY(0) + event.getY(1)) / 2;
+
+        mLength = getDistance(event);
+    }
+
+    //两点移动
+    private void doubleFingerMove(MotionEvent event) {
+        //当前中心点
         float curCenterX = (event.getX(0) + event.getX(1)) / 2;
         float curCenterY = (event.getY(0) + event.getY(1)) / 2;
 
+        //当前两点间距离
         float curLength = getDistance(event);
 
         //拖动
@@ -243,6 +261,14 @@ public class PaintView extends View {
 
             invalidate();
         }
+    }
+
+    /**
+     * 设置背景颜色
+     * @param color
+     */
+    public void setBgColor(int color) {
+        mBgColor = color;
     }
 
     /**
@@ -321,25 +347,26 @@ public class PaintView extends View {
 
         mode = MODE.NONE;
         switch (event.getAction() & MotionEvent.ACTION_MASK) {
+            //多点按下
             case MotionEvent.ACTION_POINTER_DOWN:
-                mCenterX = (event.getX(0) + event.getX(1)) / 2;
-                mCenterY = (event.getY(0) + event.getY(1)) / 2;
-
-                mLength = getDistance(event);
+                doubleFingerDown(event);
                 break;
-            case MotionEvent.ACTION_POINTER_UP:
-                break;
+            //单点按下
             case MotionEvent.ACTION_DOWN:
                 touchDown(x, y);
                 break;
+            //移动
             case MotionEvent.ACTION_MOVE:
+                //单点移动
                 if (event.getPointerCount() == SINGLE_FINGER) {
                     touchMove(x, y);
                 }
+                //多点移动
                 else if (event.getPointerCount() == DOUBLE_FINGER) {
-                    moveDoubleFinger(event);
+                    doubleFingerMove(event);
                 }
                 break;
+            //单点抬起
             case MotionEvent.ACTION_UP:
                 touchUp(x, y);
                 break;
