@@ -4,12 +4,17 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
+
+import com.lht.paintview.pojo.DrawPath;
+import com.lht.paintview.pojo.DrawPoint;
+import com.lht.paintview.pojo.DrawShape;
 
 import java.util.ArrayList;
 
@@ -34,6 +39,7 @@ public class PaintView extends View {
     //绘制背景图Paint
     private Paint mBitmapPaint;
     private Canvas mCanvas;
+    private Matrix mMatrix = new Matrix();
     private Bitmap mBitmap;
     //背景图
     private Bitmap mBgBitmap = null;
@@ -46,6 +52,17 @@ public class PaintView extends View {
     //绘制list
     private ArrayList<DrawShape> mDrawShapes = new ArrayList<>();
     private boolean bPathDrawing = false;
+
+    //手势
+    private final static int SINGLE_FINGER = 1, DOUBLE_FINGER = 2;
+
+    private enum MODE {
+        NONE, DRAG, ZOOM
+    }
+    private MODE mode = MODE.NONE;
+    private float mCenterX, mCenterY;
+    private float mLength = 0;
+    private float mDistanceX, mDistanceY, mScale;
 
     public PaintView(Context context) {
         super(context);
@@ -103,10 +120,19 @@ public class PaintView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        canvas.drawBitmap(mBitmap, 0, 0, null);
+        switch (mode) {
+            case DRAG:
+                mMatrix.postTranslate(mDistanceX, mDistanceY);
+                break;
+            case ZOOM:
+                mMatrix.postScale(mScale, mScale, mCenterX, mCenterY);
+                break;
+        }
 
-        for (DrawShape dp : mDrawShapes) {
-            dp.draw(canvas);
+        canvas.drawBitmap(mBitmap, mMatrix, null);
+
+        for (DrawShape shape : mDrawShapes) {
+            shape.draw(canvas);
         }
     }
 
@@ -153,6 +179,42 @@ public class PaintView extends View {
         if (mOnDrawListener != null) {
             mOnDrawListener.afterDraw(mDrawShapes);
         }
+    }
+
+    private void moveDoubleFinger(MotionEvent event) {
+        float curCenterX = (event.getX(0) + event.getX(1)) / 2;
+        float curCenterY = (event.getY(0) + event.getY(1)) / 2;
+
+        float curLength = getDistance(event);
+
+        //拖动
+        if (Math.abs(mLength - curLength) < 10) {
+            mode = MODE.DRAG;
+            mDistanceX = curCenterX - mCenterX;
+            mDistanceY = curCenterY - mCenterY;
+        }
+        //放大 || 缩小
+        else if (mLength < curLength || mLength > curLength){
+            mode = MODE.ZOOM;
+            mScale = curLength / mLength;
+        }
+
+        mCenterX = curCenterX;
+        mCenterY = curCenterY;
+
+        mLength = curLength;
+    }
+
+    /**
+     * 获取两个触控点之间的距离
+     * @param event
+     * @return 两个触控点之间的距离
+     */
+    private float getDistance(MotionEvent event) {
+        float x = event.getX(0) - event.getX(1);
+        float y = event.getY(0) - event.getY(1);
+
+        return (float)Math.sqrt(x * x + y * y);
     }
 
     /**
@@ -218,7 +280,7 @@ public class PaintView extends View {
 
     private void drawBitmapToCanvas(Bitmap bitmap) {
         if (bitmap.getWidth() > mWidth || bitmap.getHeight() > mHeight ) {
-            bitmap = ImageUtil.zoomImg(bitmap, mWidth, mHeight);
+            bitmap = zoomImg(bitmap, mWidth, mHeight);
         }
 
         float left = (mWidth - bitmap.getWidth()) / 2;
@@ -235,17 +297,48 @@ public class PaintView extends View {
         }
     }
 
+    private Bitmap zoomImg(Bitmap bm, int newWidth , int newHeight){
+        // 获得图片的宽高
+        int width = bm.getWidth();
+        int height = bm.getHeight();
+        // 计算缩放比例
+        float scaleWidth = ((float) newWidth) / width;
+        float scaleHeight = ((float) newHeight) / height;
+
+        float scale = scaleWidth > scaleHeight ? scaleHeight : scaleWidth;
+
+        // 取得想要缩放的matrix参数
+        Matrix matrix = new Matrix();
+        matrix.postScale(scale, scale);
+        // 得到新的图片
+        return Bitmap.createBitmap(bm, 0, 0, width, height, matrix, true);
+    }
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         float x = event.getX();
         float y = event.getY();
 
-        switch (event.getAction()) {
+        mode = MODE.NONE;
+        switch (event.getAction() & MotionEvent.ACTION_MASK) {
+            case MotionEvent.ACTION_POINTER_DOWN:
+                mCenterX = (event.getX(0) + event.getX(1)) / 2;
+                mCenterY = (event.getY(0) + event.getY(1)) / 2;
+
+                mLength = getDistance(event);
+                break;
+            case MotionEvent.ACTION_POINTER_UP:
+                break;
             case MotionEvent.ACTION_DOWN:
                 touchDown(x, y);
                 break;
             case MotionEvent.ACTION_MOVE:
-                touchMove(x, y);
+                if (event.getPointerCount() == SINGLE_FINGER) {
+                    touchMove(x, y);
+                }
+                else if (event.getPointerCount() == DOUBLE_FINGER) {
+                    moveDoubleFinger(event);
+                }
                 break;
             case MotionEvent.ACTION_UP:
                 touchUp(x, y);

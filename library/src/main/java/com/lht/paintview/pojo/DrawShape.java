@@ -1,4 +1,4 @@
-package com.lht.paintview;
+package com.lht.paintview.pojo;
 
 import android.graphics.Canvas;
 import android.graphics.Paint;

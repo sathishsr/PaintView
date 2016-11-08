@@ -5,17 +5,14 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageButton;
 
-import com.lht.paintview.ImageUtil;
 import com.lht.paintview.PaintView;
-
-import java.io.File;
+import com.lht.paintviewdemo.util.ImageUtil;
 
 public class PaintActivity extends AppCompatActivity implements View.OnClickListener {
 
@@ -55,6 +52,7 @@ public class PaintActivity extends AppCompatActivity implements View.OnClickList
 
         Intent intent = new Intent();
         intent.setClass(context, PaintActivity.class);
+        intent.putExtra("bitmap_uri", ImageUtil.saveShareImage(context, bitmap));
         context.startActivity(intent);
     }
 
@@ -107,31 +105,14 @@ public class PaintActivity extends AppCompatActivity implements View.OnClickList
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_share:
-                shareSingleImage(mPaintView.getBitmap());
+                shareSingleImage(
+                        ImageUtil.saveShareImage(this, mPaintView.getBitmap()));
                 break;
         }
         return true;
     }
 
-    final static String SHARE_IMAGE_DIR = "image";
-    final static String SHARE_IMAGE_NAME = "share";
-    final static String SHARE_IMAGE_EXTENSION = ".jpg";
-    public void shareSingleImage(Bitmap bitmap) {
-
-        String imageDir = Environment.getExternalStorageDirectory() + File.separator +
-                getResources().getString(R.string.app_name) + File.separator +
-                SHARE_IMAGE_DIR + File.separator;
-        File bitmapDir = new File(imageDir);
-
-        if (!bitmapDir.exists()) {
-            bitmapDir.mkdirs();
-        }
-
-        File bitmapFile = new File (imageDir + SHARE_IMAGE_NAME + SHARE_IMAGE_EXTENSION);
-        ImageUtil.saveBitmap(bitmap, bitmapFile.getAbsolutePath(), false);
-
-        Uri imageUri = Uri.fromFile(bitmapFile);
-
+    private void shareSingleImage(Uri imageUri) {
         Intent shareIntent = new Intent();
         shareIntent.setAction(Intent.ACTION_SEND);
         shareIntent.putExtra(Intent.EXTRA_STREAM, imageUri);
