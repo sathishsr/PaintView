@@ -40,7 +40,7 @@ public class MainActivity extends AppCompatActivity {
             }
         };
         mWebView.setWebChromeClient(WebChromeClient);
-        mWebView.loadUrl("https://www.google.com");
+        mWebView.loadUrl("http://jandan.net");
     }
 
     @Override
