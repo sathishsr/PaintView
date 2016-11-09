@@ -245,6 +245,10 @@ public class PaintView extends View {
             invalidate();
         }
 
+        if (mOnDrawListener != null) {
+            mOnDrawListener.afterDraw(mDrawShapes);
+        }
+
         return mDrawShapes != null && mDrawShapes.size() > 0;
     }
 

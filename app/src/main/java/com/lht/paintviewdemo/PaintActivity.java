@@ -13,9 +13,12 @@ import android.widget.ImageButton;
 import android.widget.Toast;
 
 import com.lht.paintview.PaintView;
+import com.lht.paintview.pojo.DrawShape;
 import com.lht.paintviewdemo.util.ImageUtil;
 
-public class PaintActivity extends AppCompatActivity implements View.OnClickListener {
+import java.util.ArrayList;
+
+public class PaintActivity extends AppCompatActivity implements View.OnClickListener, PaintView.OnDrawListener {
 
     static Bitmap sBitmap = null;
 
@@ -35,6 +38,7 @@ public class PaintActivity extends AppCompatActivity implements View.OnClickList
         mPaintView = (PaintView)findViewById(R.id.view_paint);
         mPaintView.setColor(COLOR_RED);
         mPaintView.setStrokeWidth(WIDTH_WRITE);
+        mPaintView.setOnDrawListener(this);
 
         if (sBitmap != null) {
             mPaintView.setBitmap(sBitmap);
@@ -47,6 +51,7 @@ public class PaintActivity extends AppCompatActivity implements View.OnClickList
         mBtnText = (ImageButton)findViewById(R.id.btn_text);
         mBtnText.setOnClickListener(this);
         mBtnUndo = (ImageButton)findViewById(R.id.btn_undo);
+        mBtnUndo.setImageAlpha(0x77);
         mBtnUndo.setOnClickListener(this);
     }
 
@@ -127,5 +132,17 @@ public class PaintActivity extends AppCompatActivity implements View.OnClickList
         startActivity(
                 Intent.createChooser(shareIntent, getResources().getString(R.string.title_share)));
 
+    }
+
+    @Override
+    public void afterDraw(ArrayList<DrawShape> mDrawShapes) {
+        if (mDrawShapes.size() == 0) {
+            mBtnUndo.setImageAlpha(0x77);
+            mBtnUndo.setEnabled(false);
+        }
+        else {
+            mBtnUndo.setImageAlpha(0xFF);
+            mBtnUndo.setEnabled(true);
+        }
     }
 }
