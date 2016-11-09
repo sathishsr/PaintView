@@ -135,8 +135,9 @@ public class PaintView extends View {
                 break;
         }
 
+        canvas.concat(mMatrix);
         canvas.drawColor(mBgColor);
-        canvas.drawBitmap(mBitmap, mMatrix, null);
+        canvas.drawBitmap(mBitmap, 0, 0, null);
 
         for (DrawShape shape : mDrawShapes) {
             shape.draw(canvas);
