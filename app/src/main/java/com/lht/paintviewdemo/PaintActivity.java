@@ -20,8 +20,6 @@ import java.util.ArrayList;
 
 public class PaintActivity extends AppCompatActivity implements View.OnClickListener, PaintView.OnDrawListener {
 
-    static Bitmap sBitmap = null;
-
     final static int WIDTH_WRITE = 2, WIDTH_PAINT = 40;
     final static int COLOR_RED = 0xffff4141, COLOR_BLUE = 0xff41c6ff;
 
@@ -40,8 +38,10 @@ public class PaintActivity extends AppCompatActivity implements View.OnClickList
         mPaintView.setStrokeWidth(WIDTH_WRITE);
         mPaintView.setOnDrawListener(this);
 
-        if (sBitmap != null) {
-            mPaintView.setBitmap(sBitmap);
+        Uri uri = getIntent().getParcelableExtra("bitmap_uri");
+        Bitmap bitmap = ImageUtil.getBitmapByUri(this, uri);
+        if (bitmap != null) {
+            mPaintView.setBitmap(bitmap);
         }
 
         mBtnColor = (ImageButton)findViewById(R.id.btn_color);
@@ -56,8 +56,6 @@ public class PaintActivity extends AppCompatActivity implements View.OnClickList
     }
 
     public static void start(Context context, Bitmap bitmap) {
-        sBitmap = bitmap;
-
         Intent intent = new Intent();
         intent.setClass(context, PaintActivity.class);
         intent.putExtra("bitmap_uri", ImageUtil.saveShareImage(context, bitmap));
