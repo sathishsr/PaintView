@@ -36,11 +36,12 @@ public class PaintView extends View {
     private int mBgColor = Color.WHITE;
     //绘制标记Paint
     private Paint mPaint;
+
     //绘制背景图Paint
     private Paint mBitmapPaint;
     private Canvas mCanvas;
-    private Matrix mMatrix = new Matrix();
     private Bitmap mBitmap;
+
     //背景图
     private Bitmap mBgBitmap = null;
 
@@ -55,14 +56,25 @@ public class PaintView extends View {
 
     //手势
     private final static int SINGLE_FINGER = 1, DOUBLE_FINGER = 2;
-
     private enum MODE {
         NONE, DRAG, ZOOM
     }
     private MODE mode = MODE.NONE;
+
+    //中心点
     private float mCenterX, mCenterY;
+
+    //当次两指间距
     private float mLength = 0;
-    private float mDistanceX, mDistanceY, mScale;
+    //当次位移
+    private float mDistanceX, mDistanceY;
+    //当次缩放
+    private float mScale;
+
+    //整体矩阵
+    private Matrix mMainMatrix = new Matrix();
+    //当次矩阵
+    private Matrix mCurrentMatrix = new Matrix();
 
     public PaintView(Context context) {
         super(context);
@@ -128,19 +140,23 @@ public class PaintView extends View {
     protected void onDraw(Canvas canvas) {
         switch (mode) {
             case DRAG:
-                mMatrix.postTranslate(mDistanceX, mDistanceY);
+                mMainMatrix.postTranslate(mDistanceX, mDistanceY);
+                mCurrentMatrix.setTranslate(mDistanceX, mDistanceY);
                 break;
             case ZOOM:
-                mMatrix.postScale(mScale, mScale, mCenterX, mCenterY);
+                mMainMatrix.postScale(mScale, mScale, mCenterX, mCenterY);
+                mCurrentMatrix.setScale(mScale, mScale, mCenterX, mCenterY);
+                break;
+            case NONE:
+                mCurrentMatrix.reset();
                 break;
         }
 
-        canvas.concat(mMatrix);
         canvas.drawColor(mBgColor);
-        canvas.drawBitmap(mBitmap, 0, 0, null);
+        canvas.drawBitmap(mBitmap, mMainMatrix, null);
 
         for (DrawShape shape : mDrawShapes) {
-            shape.draw(canvas);
+            shape.draw(canvas, mCurrentMatrix);
         }
     }
 

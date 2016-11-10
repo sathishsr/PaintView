@@ -1,6 +1,7 @@
 package com.lht.paintview.pojo;
 
 import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 
 /**
@@ -10,5 +11,5 @@ import android.graphics.Paint;
 public abstract class DrawShape {
     Paint paint;
 
-    public abstract void draw(Canvas canvas);
+    public abstract void draw(Canvas canvas, Matrix matrix);
 }

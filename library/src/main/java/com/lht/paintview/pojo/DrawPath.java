@@ -1,6 +1,7 @@
 package com.lht.paintview.pojo;
 
 import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 
@@ -18,7 +19,8 @@ public class DrawPath extends DrawShape {
     }
 
     @Override
-    public void draw(Canvas canvas) {
+    public void draw(Canvas canvas, Matrix m) {
+        path.transform(m);
         canvas.drawPath(path, paint);
     }
 }
