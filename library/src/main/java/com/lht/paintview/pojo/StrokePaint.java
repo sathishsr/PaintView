@@ -14,8 +14,8 @@ public class StrokePaint extends Paint {
     private float mScale = 1;
     //实际笔迹宽度为 mWidth * mScale
 
-    public StrokePaint(int flags) {
-        super(flags);
+    public StrokePaint() {
+        super();
     }
 
     public StrokePaint(StrokePaint paint) {

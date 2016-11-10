@@ -25,9 +25,16 @@ import java.util.ArrayList;
 public class PaintView extends View {
 
     private OnDrawListener mOnDrawListener;
+
     public interface OnDrawListener {
         void afterDraw(ArrayList<DrawShape> mDrawShapes);
     }
+
+    public void setOnDrawListener(OnDrawListener onDrawListener) {
+        mOnDrawListener = onDrawListener;
+    }
+
+    private static final float SCALE_MAX = 2f, SCALE_MIN = 0.5f;
 
     //view尺寸
     private int mWidth, mHeight;
@@ -58,9 +65,8 @@ public class PaintView extends View {
     }
     private MODE mode = MODE.NONE;
 
-    //中心点
-    private float mCenterX, mCenterY;
-
+    //当次两指中心点
+    private float mCurrentCenterX, mCurrentCenterY;
     //当次两指间距
     private float mCurrentLength = 0;
     //当次位移
@@ -70,6 +76,7 @@ public class PaintView extends View {
 
     //整体矩阵
     private Matrix mMainMatrix = new Matrix();
+    private float[] mMainMatrixValues = new float[9];
     //当次矩阵
     private Matrix mCurrentMatrix = new Matrix();
 
@@ -83,22 +90,20 @@ public class PaintView extends View {
         init();
     }
 
-    public void setOnDrawListener(OnDrawListener onDrawListener) {
-        mOnDrawListener = onDrawListener;
-    }
-
     private void init() {
         setDrawingCacheEnabled(true);
 
         initPaint();
-        mBitmapPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        mBitmapPaint = new Paint();
+        mBitmapPaint.setAntiAlias(true);
+        mBitmapPaint.setDither(true);
     }
 
     /**
      * 初始化画笔
      */
     private void initPaint() {
-        StrokePaint paint = new StrokePaint(Paint.ANTI_ALIAS_FLAG);
+        StrokePaint paint = new StrokePaint();
         paint.setAntiAlias(true);
         paint.setDither(true);
         paint.setStyle(Paint.Style.STROKE);
@@ -125,100 +130,6 @@ public class PaintView extends View {
         for (DrawShape shape : mDrawShapes) {
             shape.draw(canvas, mCurrentMatrix);
         }
-    }
-
-    private void touchDown(float x, float y) {
-        mCurrentX = x;
-        mCurrentY = y;
-    }
-
-    private void touchMove(float x, float y) {
-        final float previousX = mCurrentX;
-        final float previousY = mCurrentY;
-
-        final float dx = Math.abs(x - previousX);
-        final float dy = Math.abs(y - previousY);
-
-        //两点之间的距离大于等于3时，生成贝塞尔绘制曲线
-        if (dx >= 3 || dy >= 3) {
-            if (!bPathDrawing) {
-                mCurrentPath = new Path();
-                mCurrentPath.moveTo(previousX, previousY);
-                mDrawShapes.add(
-                        new DrawPath(mCurrentPath, getCurrentPaint()));
-                bPathDrawing = true;
-            }
-
-            //设置贝塞尔曲线的操作点为起点和终点的一半
-            float cX = (x + previousX) / 2;
-            float cY = (y + previousY) / 2;
-
-            //二次贝塞尔，实现平滑曲线；previousX, previousY为操作点，cX, cY为终点
-            mCurrentPath.quadTo(previousX, previousY, cX, cY);
-
-            //第二次执行时，第一次结束调用的坐标值将作为第二次调用的初始坐标值
-            mCurrentX = x;
-            mCurrentY = y;
-        }
-    }
-
-    private void touchUp(float x, float y) {
-        if (!bPathDrawing && x == mCurrentX && y == mCurrentY) {
-            mDrawShapes.add(
-                    new DrawPoint(x, y, getCurrentPaint()));
-        }
-        bPathDrawing = false;
-
-        if (mOnDrawListener != null) {
-            mOnDrawListener.afterDraw(mDrawShapes);
-        }
-    }
-
-    //两点按下
-    private void doubleFingerDown(MotionEvent event) {
-        mCenterX = (event.getX(0) + event.getX(1)) / 2;
-        mCenterY = (event.getY(0) + event.getY(1)) / 2;
-
-        mCurrentLength = getDistance(event);
-    }
-
-    //两点移动
-    private void doubleFingerMove(MotionEvent event) {
-        //当前中心点
-        float curCenterX = (event.getX(0) + event.getX(1)) / 2;
-        float curCenterY = (event.getY(0) + event.getY(1)) / 2;
-
-        //当前两点间距离
-        float curLength = getDistance(event);
-
-        //拖动
-        if (Math.abs(mCurrentLength - curLength) < 5) {
-            mode = MODE.DRAG;
-            mCurrentDistanceX = curCenterX - mCenterX;
-            mCurrentDistanceY = curCenterY - mCenterY;
-        }
-        //放大 || 缩小
-        else if (mCurrentLength < curLength || mCurrentLength > curLength){
-            mode = MODE.ZOOM;
-            mCurrentScale = curLength / mCurrentLength;
-        }
-
-        mCenterX = curCenterX;
-        mCenterY = curCenterY;
-
-        mCurrentLength = curLength;
-    }
-
-    /**
-     * 获取两个触控点之间的距离
-     * @param event
-     * @return 两个触控点之间的距离
-     */
-    private float getDistance(MotionEvent event) {
-        float x = event.getX(0) - event.getX(1);
-        float y = event.getY(0) - event.getY(1);
-
-        return (float)Math.sqrt(x * x + y * y);
     }
 
     /**
@@ -372,8 +283,10 @@ public class PaintView extends View {
                 mCurrentMatrix.setTranslate(mCurrentDistanceX, mCurrentDistanceY);
                 break;
             case ZOOM:
-                mMainMatrix.postScale(mCurrentScale, mCurrentScale, mCenterX, mCenterY);
-                mCurrentMatrix.setScale(mCurrentScale, mCurrentScale, mCenterX, mCenterY);
+                mMainMatrix.postScale(mCurrentScale, mCurrentScale,
+                        mCurrentCenterX, mCurrentCenterY);
+                mCurrentMatrix.setScale(mCurrentScale, mCurrentScale,
+                        mCurrentCenterX, mCurrentCenterY);
                 scaleStrokeWidth(mCurrentScale);
                 break;
             case NONE:
@@ -381,7 +294,108 @@ public class PaintView extends View {
                 break;
         }
 
+        mMainMatrix.getValues(mMainMatrixValues);
+
         invalidate();
         return true;
+    }
+
+    private void touchDown(float x, float y) {
+        mCurrentX = x;
+        mCurrentY = y;
+    }
+
+    private void touchMove(float x, float y) {
+        final float previousX = mCurrentX;
+        final float previousY = mCurrentY;
+
+        final float dx = Math.abs(x - previousX);
+        final float dy = Math.abs(y - previousY);
+
+        //两点之间的距离大于等于3时，生成贝塞尔绘制曲线
+        if (dx >= 3 || dy >= 3) {
+            if (!bPathDrawing) {
+                mCurrentPath = new Path();
+                mCurrentPath.moveTo(previousX, previousY);
+                mDrawShapes.add(
+                        new DrawPath(mCurrentPath, getCurrentPaint()));
+                bPathDrawing = true;
+            }
+
+            //设置贝塞尔曲线的操作点为起点和终点的一半
+            float cX = (x + previousX) / 2;
+            float cY = (y + previousY) / 2;
+
+            //二次贝塞尔，实现平滑曲线；previousX, previousY为操作点，cX, cY为终点
+            mCurrentPath.quadTo(previousX, previousY, cX, cY);
+
+            //第二次执行时，第一次结束调用的坐标值将作为第二次调用的初始坐标值
+            mCurrentX = x;
+            mCurrentY = y;
+        }
+    }
+
+    private void touchUp(float x, float y) {
+        if (!bPathDrawing && x == mCurrentX && y == mCurrentY) {
+            mDrawShapes.add(
+                    new DrawPoint(x, y, getCurrentPaint()));
+        }
+        bPathDrawing = false;
+
+        if (mOnDrawListener != null) {
+            mOnDrawListener.afterDraw(mDrawShapes);
+        }
+    }
+
+    //两点按下
+    private void doubleFingerDown(MotionEvent event) {
+        mCurrentCenterX = (event.getX(0) + event.getX(1)) / 2;
+        mCurrentCenterY = (event.getY(0) + event.getY(1)) / 2;
+
+        mCurrentLength = getDistance(event);
+    }
+
+    //两点移动
+    private void doubleFingerMove(MotionEvent event) {
+        //当前中心点
+        float curCenterX = (event.getX(0) + event.getX(1)) / 2;
+        float curCenterY = (event.getY(0) + event.getY(1)) / 2;
+
+        //当前两点间距离
+        float curLength = getDistance(event);
+
+        //拖动
+        if (Math.abs(mCurrentLength - curLength) < 5) {
+            mode = MODE.DRAG;
+            mCurrentDistanceX = curCenterX - mCurrentCenterX;
+            mCurrentDistanceY = curCenterY - mCurrentCenterY;
+        }
+        //放大 || 缩小
+        else if (mCurrentLength < curLength || mCurrentLength > curLength){
+            mode = MODE.ZOOM;
+            mCurrentScale = curLength / mCurrentLength;
+
+            float toScale = mMainMatrixValues[Matrix.MSCALE_X] * mCurrentScale;
+            if (toScale > SCALE_MAX || toScale < SCALE_MIN) {
+                mCurrentScale = 1;
+            }
+        }
+
+        mCurrentCenterX = curCenterX;
+        mCurrentCenterY = curCenterY;
+
+        mCurrentLength = curLength;
+    }
+
+    /**
+     * 获取两个触控点之间的距离
+     * @param event
+     * @return 两个触控点之间的距离
+     */
+    private float getDistance(MotionEvent event) {
+        float x = event.getX(0) - event.getX(1);
+        float y = event.getY(0) - event.getY(1);
+
+        return (float)Math.sqrt(x * x + y * y);
     }
 }
