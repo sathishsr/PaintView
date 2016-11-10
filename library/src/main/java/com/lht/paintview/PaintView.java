@@ -10,7 +10,6 @@ import android.graphics.Path;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.WindowManager;
 
 import com.lht.paintview.pojo.DrawPath;
 import com.lht.paintview.pojo.DrawPoint;
@@ -30,21 +29,15 @@ public class PaintView extends View {
         void afterDraw(ArrayList<DrawShape> mDrawShapes);
     }
 
-    //view尺寸
-    private int mWidth, mHeight;
-
     //背景色
     private int mBgColor = Color.WHITE;
     //绘制标记Paint
     private ArrayList<StrokePaint> mPaintList = new ArrayList<>();
 
-    //绘制背景图Paint
-    private Canvas mCanvas;
-    private Paint mBitmapPaint;
-    private Bitmap mBitmap;
-
     //背景图
     private Bitmap mBgBitmap = null;
+    //绘制背景图Paint
+    private Paint mBitmapPaint;
 
     //当前坐标
     private float mCurrentX, mCurrentY;
@@ -79,41 +72,23 @@ public class PaintView extends View {
 
     public PaintView(Context context) {
         super(context);
-        init(context);
+        init();
     }
 
     public PaintView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        init(context);
+        init();
     }
 
     public void setOnDrawListener(OnDrawListener onDrawListener) {
         mOnDrawListener = onDrawListener;
     }
 
-    @Override
-    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-        super.onLayout(changed, left, top, right, bottom);
-
-        mWidth = right - left;
-        mHeight = bottom - top;
-
-        drawBitmapToCanvas(mBgBitmap);
-        invalidate();
-    }
-
-    private void init(Context context) {
+    private void init() {
         setDrawingCacheEnabled(true);
-
-        //先赋值一个初始值，用于创建Bitmap
-        WindowManager manager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
-        mWidth = manager.getDefaultDisplay().getWidth();
-        mHeight = manager.getDefaultDisplay().getHeight();
 
         initPaint();
         mBitmapPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-
-        initCanvas();
     }
 
     /**
@@ -128,15 +103,6 @@ public class PaintView extends View {
         paint.setStrokeCap(Paint.Cap.ROUND);// 形状
 
         mPaintList.add(paint);
-    }
-
-    /**
-     * 初始化整体bitmap
-     */
-    private void initCanvas() {
-        mBitmap = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.RGB_565);
-        mCanvas = new Canvas(mBitmap);
-        mCanvas.drawColor(mBgColor);
     }
 
     @Override
@@ -157,7 +123,7 @@ public class PaintView extends View {
         }
 
         canvas.drawColor(mBgColor);
-        canvas.drawBitmap(mBitmap, mMainMatrix, mBitmapPaint);
+        canvas.drawBitmap(mBgBitmap, mMainMatrix, mBitmapPaint);
         for (DrawShape shape : mDrawShapes) {
             shape.draw(canvas, mCurrentMatrix);
         }
@@ -262,7 +228,6 @@ public class PaintView extends View {
      */
     public boolean undo() {
         if (mDrawShapes != null && mDrawShapes.size() > 0) {
-            clear();
             mDrawShapes.remove(mDrawShapes.size() - 1);
             invalidate();
         }
@@ -272,21 +237,6 @@ public class PaintView extends View {
         }
 
         return mDrawShapes != null && mDrawShapes.size() > 0;
-    }
-
-    /**
-     * 清除画布
-     */
-    public void clear() {
-        if (mCanvas != null) {
-            initCanvas();
-
-            if (mBgBitmap != null) {
-                drawBitmapToCanvas(mBgBitmap);
-            }
-
-            invalidate();
-        }
     }
 
     /**
@@ -317,6 +267,10 @@ public class PaintView extends View {
         mPaintList.add(paint);
     }
 
+    /**
+     * 获取绘制后截图
+     * @return
+     */
     public Bitmap getBitmap() {
         destroyDrawingCache();
         return getDrawingCache();
@@ -330,48 +284,16 @@ public class PaintView extends View {
         mBgBitmap = bitmap;
     }
 
-    private void drawBitmapToCanvas(Bitmap bitmap) {
-        if (bitmap.getWidth() > mWidth || bitmap.getHeight() > mHeight) {
-            bitmap = zoomImg(bitmap, mWidth, mHeight);
-        }
-
-        float left = (mWidth - bitmap.getWidth()) / 2;
-        float top = (mHeight - bitmap.getHeight()) / 2;
-        //缩放后
-        if (bitmap.getWidth() < mWidth && bitmap.getHeight() < mHeight) {
-            mCanvas.drawBitmap(bitmap, left, top, mBitmapPaint);
-        }
-        else if (bitmap.getWidth() < mWidth) {
-            mCanvas.drawBitmap(bitmap, left, 0, mBitmapPaint);
-        }
-        else if (bitmap.getHeight() < mHeight) {
-            mCanvas.drawBitmap(bitmap, 0, top, mBitmapPaint);
-        }
-    }
-
-    private Bitmap zoomImg(Bitmap bm, int newWidth , int newHeight){
-        // 获得图片的宽高
-        int width = bm.getWidth();
-        int height = bm.getHeight();
-        // 计算缩放比例
-        float scaleWidth = ((float) newWidth) / width;
-        float scaleHeight = ((float) newHeight) / height;
-
-        float scale = scaleWidth > scaleHeight ? scaleHeight : scaleWidth;
-
-        // 取得想要缩放的matrix参数
-        Matrix matrix = new Matrix();
-        matrix.postScale(scale, scale);
-        // 得到新的图片
-        return Bitmap.createBitmap(bm, 0, 0, width, height, matrix, true);
-    }
-
-    //获得当前笔迹
+    /**
+     * 获得当前笔迹
+     */
     private StrokePaint getCurrentPaint() {
         return mPaintList.get(mPaintList.size() - 1);
     }
 
-    //缩放所有笔迹
+    /**
+     * 缩放所有笔迹
+     */
     private void scaleStrokeWidth(float scale) {
         for (StrokePaint paint: mPaintList) {
             paint.setScale(paint.getScale() * scale);
