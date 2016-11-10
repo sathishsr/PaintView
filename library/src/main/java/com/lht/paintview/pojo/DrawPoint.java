@@ -20,6 +20,7 @@ public class DrawPoint extends DrawShape {
 
     @Override
     public void draw(Canvas canvas, Matrix matrix) {
+        //缩放坐标映射
         matrix.getValues(matrixValues);
         x = x * matrixValues[0] + y * matrixValues[1] + matrixValues[2];
         y = x * matrixValues[3] + y * matrixValues[4] + matrixValues[5];

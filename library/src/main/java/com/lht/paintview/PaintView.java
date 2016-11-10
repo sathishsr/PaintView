@@ -52,10 +52,13 @@ public class PaintView extends View {
 
     // Paint for Text and Text Rectangle
     // 用于绘制文字和文字边框
-    private StrokePaint mTextPaint, mTextRectPaint;
+    private StrokePaint mTextRectPaint;
     private DrawText mCurrentText;
     private DrawRect mCurrentTextRect;
     private boolean bTextDrawing = false, bTextDraging = false;
+    //Paint List for Stroke
+    //绘制文字Paint列表
+    private ArrayList<StrokePaint> mTextPaintList = new ArrayList<>();
 
     //Background Image
     //背景图
@@ -131,9 +134,10 @@ public class PaintView extends View {
 
         mPaintList.add(paint);
 
-        mTextPaint = new StrokePaint(paint);
+        StrokePaint textPaint = new StrokePaint(paint);
+        mTextPaintList.add(textPaint);
+
         mTextRectPaint = new StrokePaint(paint);
-        mTextRectPaint.setColor(Color.RED);
     }
 
     @Override
@@ -166,7 +170,7 @@ public class PaintView extends View {
      */
     public void startText() {
         bTextDrawing = true;
-        mCurrentText = new DrawText(mTextPaint);
+        mCurrentText = new DrawText(getCurrentTextPaint());
         //文字初始坐标位于view中心
         mCurrentText.setCoordinate(mWidth / 2, mHeight / 2);
 
@@ -249,6 +253,30 @@ public class PaintView extends View {
     }
 
     /**
+     * Set text color
+     * 设置文字颜色
+     * @param color 0xaarrggbb
+     */
+    public void setTextColor(int color) {
+        StrokePaint paint = new StrokePaint(getCurrentTextPaint());
+        paint.setColor(color);
+        mTextPaintList.add(paint);
+
+        mTextRectPaint.setColor(color);
+    }
+
+    /**
+     * Set text size
+     * 设置文字大小
+     * @param width
+     */
+    public void setTextSize(int width) {
+        StrokePaint paint = new StrokePaint(getCurrentTextPaint());
+        paint.setStrokeWidth(width);
+        mTextPaintList.add(paint);
+    }
+
+    /**
      * 获取绘制结果图
      * @return paint result 绘制结果图
      */
@@ -310,13 +338,22 @@ public class PaintView extends View {
     }
 
     /**
+     * 获得当前文字笔迹
+     */
+    private StrokePaint getCurrentTextPaint() {
+        return mTextPaintList.get(mTextPaintList.size() - 1);
+    }
+
+    /**
      * 缩放所有笔迹
      */
     private void scaleStrokeWidth(float scale) {
         for (StrokePaint paint: mPaintList) {
             paint.setScale(paint.getScale() * scale);
         }
-        mTextPaint.setScale(mTextPaint.getScale() * scale);
+        for (StrokePaint paint: mTextPaintList) {
+            paint.setScale(paint.getScale() * scale);
+        }
     }
 
     @Override

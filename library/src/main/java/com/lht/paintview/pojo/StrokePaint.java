@@ -15,9 +15,8 @@ public class StrokePaint extends Paint {
     //笔迹宽度
     private float mStrokeWidth = super.getStrokeWidth();
     //custom text size
-    private float mTextSize = 28;//TODO
-    //actual stroke width: mWidth * mScale
-    //实际笔迹宽度为 mWidth * mScale
+    //文字大小
+    private float mTextSize = 28;
 
     public StrokePaint() {
         super();
@@ -54,10 +53,20 @@ public class StrokePaint extends Paint {
         this.mTextSize = mTextSize;
     }
 
+    /**
+     * actual stroke width: mStrokeWidth * mScale
+     * 实际笔迹宽度为 mWidth * mScale
+     * @return
+     */
     public float getActualStrokeWidth() {
         return mStrokeWidth * mScale;
     }
 
+    /**
+     * actual text size: mTextSize * mScale
+     * 实际文字大小为 mTextSize * mScale
+     * @return
+     */
     public float getActualTextSize() {
         return mTextSize * mScale;
     }

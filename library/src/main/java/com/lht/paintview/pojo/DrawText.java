@@ -23,6 +23,8 @@ public class DrawText extends DrawShape {
 
     public DrawText(StrokePaint paint) {
         this.paint = paint;
+        dx = TEXT_RECT_PADDING;
+        dy = paint.getActualTextSize() / 2;
     }
 
     public void setCoordinate(float x, float y) {
@@ -48,9 +50,17 @@ public class DrawText extends DrawShape {
         return rect;
     }
 
+    /**
+     * 判断坐标是否落在文本框内
+     * @param x
+     * @param y
+     * @return
+     */
     public boolean isInTextRect(float x, float y) {
         boolean isInTextRect = x >= rect.left && x <= rect.right
                 && y >= rect.top && y <= rect.bottom;
+
+        //为可能的拖动计算点击偏移量
         if (isInTextRect) {
             dx = x - rect.left;
             dy = rect.bottom - y;
@@ -60,6 +70,7 @@ public class DrawText extends DrawShape {
 
     @Override
     public void draw(Canvas canvas, Matrix matrix) {
+        //缩放坐标映射
         matrix.getValues(matrixValues);
         x = x * matrixValues[0] + y * matrixValues[1] + matrixValues[2];
         y = x * matrixValues[3] + y * matrixValues[4] + matrixValues[5];

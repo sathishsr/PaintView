@@ -19,7 +19,9 @@ public class DrawPath extends DrawShape {
 
     @Override
     public void draw(Canvas canvas, Matrix m) {
+        //缩放坐标映射
         path.transform(m);
+
         canvas.drawPath(path, paint.setStrokeWidth());
     }
 }

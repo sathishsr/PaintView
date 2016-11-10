@@ -43,6 +43,7 @@ public class PaintActivity extends AppCompatActivity
 
         mPaintView = (PaintView)findViewById(R.id.view_paint);
         mPaintView.setColor(COLOR_RED);
+        mPaintView.setTextColor(COLOR_RED);
         mPaintView.setStrokeWidth(WIDTH_WRITE);
         mPaintView.setOnDrawListener(this);
 
@@ -125,10 +126,12 @@ public class PaintActivity extends AppCompatActivity
         bRedOrBlue = !bRedOrBlue;
         if (bRedOrBlue) {
             mPaintView.setColor(COLOR_RED);
+            mPaintView.setTextColor(COLOR_RED);
             mBtnColor.setImageResource(R.drawable.ic_red);
         }
         else {
             mPaintView.setColor(COLOR_BLUE);
+            mPaintView.setTextColor(COLOR_BLUE);
             mBtnColor.setImageResource(R.drawable.ic_blue);
         }
     }
