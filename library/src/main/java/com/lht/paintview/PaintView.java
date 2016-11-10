@@ -15,6 +15,7 @@ import android.view.WindowManager;
 import com.lht.paintview.pojo.DrawPath;
 import com.lht.paintview.pojo.DrawPoint;
 import com.lht.paintview.pojo.DrawShape;
+import com.lht.paintview.pojo.StrokePaint;
 
 import java.util.ArrayList;
 
@@ -35,11 +36,11 @@ public class PaintView extends View {
     //背景色
     private int mBgColor = Color.WHITE;
     //绘制标记Paint
-    private Paint mPaint;
+    private ArrayList<StrokePaint> mPaintList = new ArrayList<>();
 
     //绘制背景图Paint
-    private Paint mBitmapPaint;
     private Canvas mCanvas;
+    private Paint mBitmapPaint;
     private Bitmap mBitmap;
 
     //背景图
@@ -119,12 +120,14 @@ public class PaintView extends View {
      * 初始化画笔
      */
     private void initPaint() {
-        mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        mPaint.setAntiAlias(true);
-        mPaint.setDither(true);
-        mPaint.setStyle(Paint.Style.STROKE);
-        mPaint.setStrokeJoin(Paint.Join.ROUND);// 设置外边缘
-        mPaint.setStrokeCap(Paint.Cap.ROUND);// 形状
+        StrokePaint paint = new StrokePaint(Paint.ANTI_ALIAS_FLAG);
+        paint.setAntiAlias(true);
+        paint.setDither(true);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeJoin(Paint.Join.ROUND);// 设置外边缘
+        paint.setStrokeCap(Paint.Cap.ROUND);// 形状
+
+        mPaintList.add(paint);
     }
 
     /**
@@ -146,6 +149,7 @@ public class PaintView extends View {
             case ZOOM:
                 mMainMatrix.postScale(mScale, mScale, mCenterX, mCenterY);
                 mCurrentMatrix.setScale(mScale, mScale, mCenterX, mCenterY);
+                scaleStrokeWidth(mScale);
                 break;
             case NONE:
                 mCurrentMatrix.reset();
@@ -153,8 +157,7 @@ public class PaintView extends View {
         }
 
         canvas.drawColor(mBgColor);
-        canvas.drawBitmap(mBitmap, mMainMatrix, null);
-
+        canvas.drawBitmap(mBitmap, mMainMatrix, mBitmapPaint);
         for (DrawShape shape : mDrawShapes) {
             shape.draw(canvas, mCurrentMatrix);
         }
@@ -177,7 +180,8 @@ public class PaintView extends View {
             if (!bPathDrawing) {
                 mCurPath = new Path();
                 mCurPath.moveTo(previousX, previousY);
-                mDrawShapes.add(new DrawPath(mCurPath, mPaint));
+                mDrawShapes.add(
+                        new DrawPath(mCurPath, getCurrentPaint()));
                 bPathDrawing = true;
             }
 
@@ -196,7 +200,8 @@ public class PaintView extends View {
 
     private void touchUp(float x, float y) {
         if (!bPathDrawing && x == mCurX && y == mCurY) {
-            mDrawShapes.add(new DrawPoint(x, y, mPaint));
+            mDrawShapes.add(
+                    new DrawPoint(x, y, getCurrentPaint()));
         }
         bPathDrawing = false;
 
@@ -297,9 +302,9 @@ public class PaintView extends View {
      * @param color 0xaarrggbb
      */
     public void setColor(int color) {
-        Paint paint = new Paint(mPaint);
+        StrokePaint paint = new StrokePaint(getCurrentPaint());
         paint.setColor(color);
-        mPaint = paint;
+        mPaintList.add(paint);
     }
 
     /**
@@ -307,9 +312,9 @@ public class PaintView extends View {
      * @param width
      */
     public void setStrokeWidth(int width) {
-        Paint paint = new Paint(mPaint);
-        paint.setStrokeWidth(width);
-        mPaint = paint;
+        StrokePaint paint = new StrokePaint(getCurrentPaint());
+        paint.setWidth(width);
+        mPaintList.add(paint);
     }
 
     public Bitmap getBitmap() {
@@ -326,7 +331,7 @@ public class PaintView extends View {
     }
 
     private void drawBitmapToCanvas(Bitmap bitmap) {
-        if (bitmap.getWidth() > mWidth || bitmap.getHeight() > mHeight ) {
+        if (bitmap.getWidth() > mWidth || bitmap.getHeight() > mHeight) {
             bitmap = zoomImg(bitmap, mWidth, mHeight);
         }
 
@@ -359,6 +364,18 @@ public class PaintView extends View {
         matrix.postScale(scale, scale);
         // 得到新的图片
         return Bitmap.createBitmap(bm, 0, 0, width, height, matrix, true);
+    }
+
+    //获得当前笔迹
+    private StrokePaint getCurrentPaint() {
+        return mPaintList.get(mPaintList.size() - 1);
+    }
+
+    //缩放所有笔迹
+    private void scaleStrokeWidth(float scale) {
+        for (StrokePaint paint: mPaintList) {
+            paint.setScale(paint.getScale() * scale);
+        }
     }
 
     @Override
