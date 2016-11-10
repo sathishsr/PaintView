@@ -8,10 +8,13 @@ import android.graphics.Paint;
 
 public class StrokePaint extends Paint {
 
+    //custom stroke width
     //笔迹宽度
     private float mWidth = 1;
+    //custom stroke scale
     //笔迹缩放
     private float mScale = 1;
+    //actual stroke width: mWidth * mScale
     //实际笔迹宽度为 mWidth * mScale
 
     public StrokePaint() {

@@ -36,35 +36,46 @@ public class PaintView extends View {
 
     private static final float SCALE_MAX = 2f, SCALE_MIN = 0.5f;
 
-    //view尺寸
+    //View Size
+    //View尺寸
     private int mWidth, mHeight;
 
+    //Background Color
     //背景色
     private int mBgColor = Color.WHITE;
-    //绘制标记Paint
+    //Paint List for Stroke
+    //绘制笔迹Paint列表
     private ArrayList<StrokePaint> mPaintList = new ArrayList<>();
 
+    //Background Image
     //背景图
     private Bitmap mBgBitmap = null;
+    //Background Paint
     //绘制背景图Paint
-    private Paint mBitmapPaint;
+    private Paint mBgPaint;
 
+    //Current Coordinate
     //当前坐标
     private float mCurrentX, mCurrentY;
+    //Current Drawing Path
     //当前绘制路径
     private Path mCurrentPath;
 
-    //绘制list
+    //Shape List(Path and Point)
+    //绘制列表(线和点）
     private ArrayList<DrawShape> mDrawShapes = new ArrayList<>();
     private boolean bPathDrawing = false;
 
+    //Gesture
     //手势
     private final static int SINGLE_FINGER = 1, DOUBLE_FINGER = 2;
     private enum MODE {
         NONE, DRAG, ZOOM
     }
     private MODE mode = MODE.NONE;
+    private boolean bDragEnable = true;
 
+    //Center Point of Two Fingers
     //当次两指中心点
     private float mCurrentCenterX, mCurrentCenterY;
     //当次两指间距
@@ -94,14 +105,11 @@ public class PaintView extends View {
         setDrawingCacheEnabled(true);
 
         initPaint();
-        mBitmapPaint = new Paint();
-        mBitmapPaint.setAntiAlias(true);
-        mBitmapPaint.setDither(true);
+        mBgPaint = new Paint();
+        mBgPaint.setAntiAlias(true);
+        mBgPaint.setDither(true);
     }
 
-    /**
-     * 初始化画笔
-     */
     private void initPaint() {
         StrokePaint paint = new StrokePaint();
         paint.setAntiAlias(true);
@@ -126,14 +134,16 @@ public class PaintView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         canvas.drawColor(mBgColor);
-        canvas.drawBitmap(mBgBitmap, mMainMatrix, mBitmapPaint);
+        canvas.drawBitmap(mBgBitmap, mMainMatrix, mBgPaint);
         for (DrawShape shape : mDrawShapes) {
             shape.draw(canvas, mCurrentMatrix);
         }
     }
 
     /**
+     * Undo
      * 撤销
+     * @return is Undo still available 是否还能撤销
      */
     public boolean undo() {
         if (mDrawShapes != null && mDrawShapes.size() > 0) {
@@ -150,14 +160,16 @@ public class PaintView extends View {
 
     /**
      * 设置背景颜色
-     * @param color
+     * Set background color
+     * @param color 0xaarrggbb
      */
     public void setBgColor(int color) {
         mBgColor = color;
     }
 
     /**
-     * 设置笔的颜色
+     * 设置画笔颜色
+     * Set paint color
      * @param color 0xaarrggbb
      */
     public void setColor(int color) {
@@ -167,7 +179,8 @@ public class PaintView extends View {
     }
 
     /**
-     * 设置笔的宽度
+     * 设置画笔宽度
+     * Set stroke width
      * @param width
      */
     public void setStrokeWidth(int width) {
@@ -177,8 +190,8 @@ public class PaintView extends View {
     }
 
     /**
-     * 获取绘制后截图
-     * @return
+     * 获取绘制结果图
+     * @return paint result 绘制结果图
      */
     public Bitmap getBitmap() {
         destroyDrawingCache();
@@ -186,7 +199,8 @@ public class PaintView extends View {
     }
 
     /**
-     * 设置画布原始图案
+     * 设置背景图
+     * Set background image
      * @param bitmap
      */
     public void setBitmap(Bitmap bitmap) {
@@ -365,7 +379,7 @@ public class PaintView extends View {
         float curLength = getDistance(event);
 
         //拖动
-        if (Math.abs(mCurrentLength - curLength) < 5) {
+        if (bDragEnable && Math.abs(mCurrentLength - curLength) < 5) {
             mode = MODE.DRAG;
             mCurrentDistanceX = curCenterX - mCurrentCenterX;
             mCurrentDistanceY = curCenterY - mCurrentCenterY;
@@ -385,6 +399,8 @@ public class PaintView extends View {
         mCurrentCenterY = curCenterY;
 
         mCurrentLength = curLength;
+
+        bDragEnable = mMainMatrixValues[Matrix.MSCALE_X] > 1;
     }
 
     /**
