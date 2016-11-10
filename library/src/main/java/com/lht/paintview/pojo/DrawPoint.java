@@ -10,6 +10,7 @@ import android.graphics.Matrix;
 public class DrawPoint extends DrawShape {
 
     private float x, y;
+    private float[] matrixValues = new float[9];
 
     public DrawPoint(float x, float y, StrokePaint paint) {
         this.x = x;
@@ -19,6 +20,10 @@ public class DrawPoint extends DrawShape {
 
     @Override
     public void draw(Canvas canvas, Matrix matrix) {
+        matrix.getValues(matrixValues);
+        x = x * matrixValues[0] + y * matrixValues[1] + matrixValues[2];
+        y = x * matrixValues[3] + y * matrixValues[4] + matrixValues[5];
+
         canvas.drawPoint(x, y, paint.setStrokeWidth());
     }
 }
