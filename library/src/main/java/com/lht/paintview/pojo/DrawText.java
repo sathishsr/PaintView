@@ -12,19 +12,22 @@ public class DrawText extends DrawShape {
 
     private static final int TEXT_RECT_PADDING = 15;
 
+    //文本的坐标位于文本左下角
     private float x = 0, y = 0;
     private String text = "";
     private float[] matrixValues = new float[9];
 
     private Rect rect = new Rect();
+    //点击文本框时的偏移量
+    private float dx = 0, dy = 0;
 
     public DrawText(StrokePaint paint) {
         this.paint = paint;
     }
 
     public void setCoordinate(float x, float y) {
-        this.x = x;
-        this.y = y;
+        this.x = x - dx;
+        this.y = y + dy;
     }
 
     public void setText(String text) {
@@ -46,7 +49,13 @@ public class DrawText extends DrawShape {
     }
 
     public boolean isInTextRect(float x, float y) {
-        return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+        boolean isInTextRect = x >= rect.left && x <= rect.right
+                && y >= rect.top && y <= rect.bottom;
+        if (isInTextRect) {
+            dx = x - rect.left;
+            dy = rect.bottom - y;
+        }
+        return isInTextRect;
     }
 
     @Override
