@@ -29,6 +29,9 @@ public class PaintView extends View {
         void afterDraw(ArrayList<DrawShape> mDrawShapes);
     }
 
+    //view尺寸
+    private int mWidth, mHeight;
+
     //背景色
     private int mBgColor = Color.WHITE;
     //绘制标记Paint
@@ -106,22 +109,17 @@ public class PaintView extends View {
     }
 
     @Override
-    protected void onDraw(Canvas canvas) {
-        switch (mode) {
-            case DRAG:
-                mMainMatrix.postTranslate(mCurrentDistanceX, mCurrentDistanceY);
-                mCurrentMatrix.setTranslate(mCurrentDistanceX, mCurrentDistanceY);
-                break;
-            case ZOOM:
-                mMainMatrix.postScale(mCurrentScale, mCurrentScale, mCenterX, mCenterY);
-                mCurrentMatrix.setScale(mCurrentScale, mCurrentScale, mCenterX, mCenterY);
-                scaleStrokeWidth(mCurrentScale);
-                break;
-            case NONE:
-                mCurrentMatrix.reset();
-                break;
-        }
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
 
+        mWidth = right - left;
+        mHeight = bottom - top;
+
+        resizeBgBitmap();
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
         canvas.drawColor(mBgColor);
         canvas.drawBitmap(mBgBitmap, mMainMatrix, mBitmapPaint);
         for (DrawShape shape : mDrawShapes) {
@@ -284,6 +282,42 @@ public class PaintView extends View {
         mBgBitmap = bitmap;
     }
 
+    private void resizeBgBitmap() {
+        if (mBgBitmap.getWidth() > mWidth || mBgBitmap.getHeight() > mHeight) {
+            mBgBitmap = zoomImg(mBgBitmap, mWidth, mHeight);
+        }
+
+        float left = (mWidth - mBgBitmap.getWidth()) / 2;
+        float top = (mHeight - mBgBitmap.getHeight()) / 2;
+        //缩放后
+        if (mBgBitmap.getWidth() < mWidth && mBgBitmap.getHeight() < mHeight) {
+            mMainMatrix.setTranslate(left, top);
+        }
+        else if (mBgBitmap.getWidth() < mWidth) {
+            mMainMatrix.setTranslate(left, 0);
+        }
+        else if (mBgBitmap.getHeight() < mHeight) {
+            mMainMatrix.setTranslate(0, top);
+        }
+    }
+
+    private Bitmap zoomImg(Bitmap bm, int newWidth , int newHeight){
+        // 获得图片的宽高
+        int width = bm.getWidth();
+        int height = bm.getHeight();
+        // 计算缩放比例
+        float scaleWidth = ((float) newWidth) / width;
+        float scaleHeight = ((float) newHeight) / height;
+
+        float scale = scaleWidth > scaleHeight ? scaleHeight : scaleWidth;
+
+        // 取得想要缩放的matrix参数
+        Matrix matrix = new Matrix();
+        matrix.postScale(scale, scale);
+        // 得到新的图片
+        return Bitmap.createBitmap(bm, 0, 0, width, height, matrix, true);
+    }
+
     /**
      * 获得当前笔迹
      */
@@ -331,6 +365,22 @@ public class PaintView extends View {
                 touchUp(x, y);
                 break;
         }
+
+        switch (mode) {
+            case DRAG:
+                mMainMatrix.postTranslate(mCurrentDistanceX, mCurrentDistanceY);
+                mCurrentMatrix.setTranslate(mCurrentDistanceX, mCurrentDistanceY);
+                break;
+            case ZOOM:
+                mMainMatrix.postScale(mCurrentScale, mCurrentScale, mCenterX, mCenterY);
+                mCurrentMatrix.setScale(mCurrentScale, mCurrentScale, mCenterX, mCenterY);
+                scaleStrokeWidth(mCurrentScale);
+                break;
+            case NONE:
+                mCurrentMatrix.reset();
+                break;
+        }
+
         invalidate();
         return true;
     }
