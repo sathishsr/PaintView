@@ -15,7 +15,7 @@ public class StrokePaint extends Paint {
     //笔迹宽度
     private float mStrokeWidth = super.getStrokeWidth();
     //custom text size
-    private float mTextSize = 14;//TODO
+    private float mTextSize = 28;//TODO
     //actual stroke width: mWidth * mScale
     //实际笔迹宽度为 mWidth * mScale
 

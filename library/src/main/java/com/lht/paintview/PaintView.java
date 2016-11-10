@@ -13,6 +13,7 @@ import android.view.View;
 
 import com.lht.paintview.pojo.DrawPath;
 import com.lht.paintview.pojo.DrawPoint;
+import com.lht.paintview.pojo.DrawRect;
 import com.lht.paintview.pojo.DrawShape;
 import com.lht.paintview.pojo.DrawText;
 import com.lht.paintview.pojo.StrokePaint;
@@ -50,7 +51,9 @@ public class PaintView extends View {
 
     //
     private boolean bTextDrawing = false;
+    private StrokePaint mTextPaint, mTextRectPaint;
     private DrawText mCurrentText;
+    private DrawRect mCurrentTextRect;
 
     //Background Image
     //背景图
@@ -110,12 +113,13 @@ public class PaintView extends View {
         setDrawingCacheEnabled(true);
 
         initPaint();
-        mBgPaint = new Paint();
-        mBgPaint.setAntiAlias(true);
-        mBgPaint.setDither(true);
     }
 
     private void initPaint() {
+        mBgPaint = new Paint();
+        mBgPaint.setAntiAlias(true);
+        mBgPaint.setDither(true);
+
         StrokePaint paint = new StrokePaint();
         paint.setAntiAlias(true);
         paint.setDither(true);
@@ -124,6 +128,10 @@ public class PaintView extends View {
         paint.setStrokeCap(Paint.Cap.ROUND);// 形状
 
         mPaintList.add(paint);
+
+        mTextPaint = new StrokePaint(paint);
+        mTextRectPaint = new StrokePaint(paint);
+        mTextRectPaint.setColor(Color.RED);
     }
 
     @Override
@@ -147,17 +155,26 @@ public class PaintView extends View {
 
     public void startText() {
         bTextDrawing = true;
-        mCurrentText = new DrawText(getCurrentPaint());
+        mCurrentText = new DrawText(mTextPaint);
+        mCurrentText.setCoordinate(mWidth / 2, mHeight / 2);
+
+        mCurrentTextRect = new DrawRect(mCurrentText.getTextRect(), mTextRectPaint);
+
         mDrawShapes.add(mCurrentText);
+        mDrawShapes.add(mCurrentTextRect);
+        invalidate();
     }
 
     public void changeText(String text) {
         mCurrentText.setText(text);
+        mCurrentTextRect.setRect(mCurrentText.getTextRect());
+
         invalidate();
     }
 
     public void endText() {
         bTextDrawing = false;
+        undo();
     }
 
     /**
@@ -277,6 +294,7 @@ public class PaintView extends View {
         for (StrokePaint paint: mPaintList) {
             paint.setScale(paint.getScale() * scale);
         }
+        mTextPaint.setScale(mTextPaint.getScale() * scale);
     }
 
     @Override
@@ -288,7 +306,9 @@ public class PaintView extends View {
         switch (event.getAction() & MotionEvent.ACTION_MASK) {
             //多点按下
             case MotionEvent.ACTION_POINTER_DOWN:
-                doubleFingerDown(event);
+                if (!bTextDrawing) {
+                    doubleFingerDown(event);
+                }
                 break;
             //单点按下
             case MotionEvent.ACTION_DOWN:
@@ -297,11 +317,11 @@ public class PaintView extends View {
             //移动
             case MotionEvent.ACTION_MOVE:
                 //单点移动
-                if (event.getPointerCount() == SINGLE_FINGER) {
+                if (event.getPointerCount() == SINGLE_FINGER && !bTextDrawing) {
                     touchMove(x, y);
                 }
                 //多点移动
-                else if (event.getPointerCount() == DOUBLE_FINGER) {
+                else if (event.getPointerCount() == DOUBLE_FINGER && !bTextDrawing) {
                     doubleFingerMove(event);
                 }
                 break;
@@ -377,6 +397,7 @@ public class PaintView extends View {
 
         if (bTextDrawing && x == mCurrentX && y == mCurrentY) {
             mCurrentText.setCoordinate(x, y);
+            mCurrentTextRect.setRect(mCurrentText.getTextRect());
         }
 
         bPathDrawing = false;
@@ -425,6 +446,7 @@ public class PaintView extends View {
 
         mCurrentLength = curLength;
 
+        //TODO
 //        bDragEnable = mMainMatrixValues[Matrix.MSCALE_X] > 1;
     }
 
