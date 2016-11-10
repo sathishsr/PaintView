@@ -40,6 +40,7 @@ public class PaintView extends View {
 
     //View Size
     //View尺寸
+    private boolean bInited = false;
     private int mWidth, mHeight;
 
     //Background Color
@@ -49,16 +50,17 @@ public class PaintView extends View {
     //绘制笔迹Paint列表
     private ArrayList<StrokePaint> mPaintList = new ArrayList<>();
 
-    //
-    private boolean bTextDrawing = false;
+    // Paint for Text and Text Rectangle
+    // 用于绘制文字和文字边框
     private StrokePaint mTextPaint, mTextRectPaint;
     private DrawText mCurrentText;
     private DrawRect mCurrentTextRect;
+    private boolean bTextDrawing = false, bTextDraging = false;
 
     //Background Image
     //背景图
     private Bitmap mBgBitmap = null;
-    //Background Paint
+    //Paint for Background
     //绘制背景图Paint
     private Paint mBgPaint;
 
@@ -138,14 +140,19 @@ public class PaintView extends View {
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
 
-        mWidth = right - left;
-        mHeight = bottom - top;
+        if (!bInited) {
+            mWidth = right - left;
+            mHeight = bottom - top;
 
-        resizeBgBitmap();
+            resizeBgBitmap();
+
+            bInited = true;
+        }
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
         canvas.drawColor(mBgColor);
         canvas.drawBitmap(mBgBitmap, mMainMatrix, mBgPaint);
         for (DrawShape shape : mDrawShapes) {
@@ -153,9 +160,14 @@ public class PaintView extends View {
         }
     }
 
+    /**
+     * Text painting start
+     * 开始绘制文字
+     */
     public void startText() {
         bTextDrawing = true;
         mCurrentText = new DrawText(mTextPaint);
+        //文字初始坐标位于view中心
         mCurrentText.setCoordinate(mWidth / 2, mHeight / 2);
 
         mCurrentTextRect = new DrawRect(mCurrentText.getTextRect(), mTextRectPaint);
@@ -165,6 +177,11 @@ public class PaintView extends View {
         invalidate();
     }
 
+    /**
+     * When text is inputting
+     * 文字输入中
+     * @param text
+     */
     public void changeText(String text) {
         mCurrentText.setText(text);
         mCurrentTextRect.setRect(mCurrentText.getTextRect());
@@ -172,8 +189,13 @@ public class PaintView extends View {
         invalidate();
     }
 
+    /**
+     * Text painting finish
+     * 结束绘制文字
+     */
     public void endText() {
         bTextDrawing = false;
+        //删除文字边框
         undo();
     }
 
@@ -196,8 +218,8 @@ public class PaintView extends View {
     }
 
     /**
-     * 设置背景颜色
      * Set background color
+     * 设置背景颜色
      * @param color 0xaarrggbb
      */
     public void setBgColor(int color) {
@@ -205,8 +227,8 @@ public class PaintView extends View {
     }
 
     /**
-     * 设置画笔颜色
      * Set paint color
+     * 设置画笔颜色
      * @param color 0xaarrggbb
      */
     public void setColor(int color) {
@@ -216,8 +238,8 @@ public class PaintView extends View {
     }
 
     /**
-     * 设置画笔宽度
      * Set stroke width
+     * 设置画笔宽度
      * @param width
      */
     public void setStrokeWidth(int width) {
@@ -236,8 +258,8 @@ public class PaintView extends View {
     }
 
     /**
-     * 设置背景图
      * Set background image
+     * 设置背景图
      * @param bitmap
      */
     public void setBitmap(Bitmap bitmap) {
@@ -304,7 +326,7 @@ public class PaintView extends View {
 
         mode = MODE.NONE;
         switch (event.getAction() & MotionEvent.ACTION_MASK) {
-            //多点按下
+            //文字不在输入时，多点按下
             case MotionEvent.ACTION_POINTER_DOWN:
                 if (!bTextDrawing) {
                     doubleFingerDown(event);
@@ -316,11 +338,11 @@ public class PaintView extends View {
                 break;
             //移动
             case MotionEvent.ACTION_MOVE:
-                //单点移动
-                if (event.getPointerCount() == SINGLE_FINGER && !bTextDrawing) {
+                //文字不在输入时，单点移动
+                if (event.getPointerCount() == SINGLE_FINGER) {
                     touchMove(x, y);
                 }
-                //多点移动
+                //文字不在输入时，多点移动
                 else if (event.getPointerCount() == DOUBLE_FINGER && !bTextDrawing) {
                     doubleFingerMove(event);
                 }
@@ -357,47 +379,59 @@ public class PaintView extends View {
     private void touchDown(float x, float y) {
         mCurrentX = x;
         mCurrentY = y;
+
+        if (bTextDrawing) {
+            bTextDraging = mCurrentText.isInTextRect(mCurrentX, mCurrentY);
+        }
     }
 
     private void touchMove(float x, float y) {
         final float previousX = mCurrentX;
         final float previousY = mCurrentY;
 
+        mCurrentX = x;
+        mCurrentY = y;
+
         final float dx = Math.abs(x - previousX);
         final float dy = Math.abs(y - previousY);
 
         //两点之间的距离大于等于3时，生成贝塞尔绘制曲线
         if (dx >= 3 || dy >= 3) {
-            if (!bPathDrawing) {
-                mCurrentPath = new Path();
-                mCurrentPath.moveTo(previousX, previousY);
-                mDrawShapes.add(
-                        new DrawPath(mCurrentPath, getCurrentPaint()));
-                bPathDrawing = true;
+            if (bTextDrawing) {
+                if (bTextDraging) {
+                    mCurrentText.setCoordinate(mCurrentX, mCurrentY);
+                    mCurrentTextRect.setRect(mCurrentText.getTextRect());
+                }
             }
+            else {
+                if (!bPathDrawing) {
+                    mCurrentPath = new Path();
+                    mCurrentPath.moveTo(previousX, previousY);
+                    mDrawShapes.add(
+                            new DrawPath(mCurrentPath, getCurrentPaint()));
+                    bPathDrawing = true;
+                }
 
-            //设置贝塞尔曲线的操作点为起点和终点的一半
-            float cX = (x + previousX) / 2;
-            float cY = (y + previousY) / 2;
+                //设置贝塞尔曲线的操作点为起点和终点的一半
+                float cX = (mCurrentX + previousX) / 2;
+                float cY = (mCurrentY + previousY) / 2;
 
-            //二次贝塞尔，实现平滑曲线；previousX, previousY为操作点，cX, cY为终点
-            mCurrentPath.quadTo(previousX, previousY, cX, cY);
-
-            //第二次执行时，第一次结束调用的坐标值将作为第二次调用的初始坐标值
-            mCurrentX = x;
-            mCurrentY = y;
+                //二次贝塞尔，实现平滑曲线；previousX, previousY为操作点，cX, cY为终点
+                mCurrentPath.quadTo(previousX, previousY, cX, cY);
+            }
         }
     }
 
     private void touchUp(float x, float y) {
+        //不在输入文字和绘制笔迹，而是点击时
         if (!bTextDrawing && !bPathDrawing && x == mCurrentX && y == mCurrentY) {
             mDrawShapes.add(
                     new DrawPoint(x, y, getCurrentPaint()));
         }
 
-        if (bTextDrawing && x == mCurrentX && y == mCurrentY) {
-            mCurrentText.setCoordinate(x, y);
-            mCurrentTextRect.setRect(mCurrentText.getTextRect());
+        //在输入文字时，变更文字坐标
+        if (bTextDrawing && bTextDraging) {
+            bTextDraging = false;
         }
 
         bPathDrawing = false;
@@ -435,6 +469,7 @@ public class PaintView extends View {
             mode = MODE.ZOOM;
             mCurrentScale = curLength / mCurrentLength;
 
+            //放大缩小临界值判断
             float toScale = mMainMatrixValues[Matrix.MSCALE_X] * mCurrentScale;
             if (toScale > SCALE_MAX || toScale < SCALE_MIN) {
                 mCurrentScale = 1;

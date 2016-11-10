@@ -16,6 +16,8 @@ public class DrawText extends DrawShape {
     private String text = "";
     private float[] matrixValues = new float[9];
 
+    private Rect rect = new Rect();
+
     public DrawText(StrokePaint paint) {
         this.paint = paint;
     }
@@ -29,14 +31,22 @@ public class DrawText extends DrawShape {
         this.text = text;
     }
 
+    /**
+     * Get text border rectangle
+     * 获取文字边框矩形
+     * @return
+     */
     public Rect getTextRect() {
-        Rect rect = new Rect();
         paint.getTextBounds(text, 0, text.length(), rect);
         rect.set((int)x - TEXT_RECT_PADDING,
-                (int)(y - paint.getTextSize() - TEXT_RECT_PADDING),
+                (int)(y - paint.getActualTextSize() - TEXT_RECT_PADDING),
                 (int)(x + rect.width() + TEXT_RECT_PADDING),
                 (int)y + TEXT_RECT_PADDING);
         return rect;
+    }
+
+    public boolean isInTextRect(float x, float y) {
+        return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
     }
 
     @Override

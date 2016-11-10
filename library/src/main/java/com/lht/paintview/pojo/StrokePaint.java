@@ -54,9 +54,17 @@ public class StrokePaint extends Paint {
         this.mTextSize = mTextSize;
     }
 
+    public float getActualStrokeWidth() {
+        return mStrokeWidth * mScale;
+    }
+
+    public float getActualTextSize() {
+        return mTextSize * mScale;
+    }
+
     public StrokePaint setStrokeWidth() {
-        super.setStrokeWidth(mStrokeWidth * mScale);
-        super.setTextSize(mTextSize * mScale);
+        super.setStrokeWidth(getActualStrokeWidth());
+        super.setTextSize(getActualTextSize());
 
         return this;
     }
