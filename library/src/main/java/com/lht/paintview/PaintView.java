@@ -47,9 +47,9 @@ public class PaintView extends View {
     private Bitmap mBgBitmap = null;
 
     //当前坐标
-    private float mCurX, mCurY;
+    private float mCurrentX, mCurrentY;
     //当前绘制路径
-    private Path mCurPath;
+    private Path mCurrentPath;
 
     //绘制list
     private ArrayList<DrawShape> mDrawShapes = new ArrayList<>();
@@ -66,11 +66,11 @@ public class PaintView extends View {
     private float mCenterX, mCenterY;
 
     //当次两指间距
-    private float mLength = 0;
+    private float mCurrentLength = 0;
     //当次位移
-    private float mDistanceX, mDistanceY;
+    private float mCurrentDistanceX, mCurrentDistanceY;
     //当次缩放
-    private float mScale;
+    private float mCurrentScale;
 
     //整体矩阵
     private Matrix mMainMatrix = new Matrix();
@@ -143,13 +143,13 @@ public class PaintView extends View {
     protected void onDraw(Canvas canvas) {
         switch (mode) {
             case DRAG:
-                mMainMatrix.postTranslate(mDistanceX, mDistanceY);
-                mCurrentMatrix.setTranslate(mDistanceX, mDistanceY);
+                mMainMatrix.postTranslate(mCurrentDistanceX, mCurrentDistanceY);
+                mCurrentMatrix.setTranslate(mCurrentDistanceX, mCurrentDistanceY);
                 break;
             case ZOOM:
-                mMainMatrix.postScale(mScale, mScale, mCenterX, mCenterY);
-                mCurrentMatrix.setScale(mScale, mScale, mCenterX, mCenterY);
-                scaleStrokeWidth(mScale);
+                mMainMatrix.postScale(mCurrentScale, mCurrentScale, mCenterX, mCenterY);
+                mCurrentMatrix.setScale(mCurrentScale, mCurrentScale, mCenterX, mCenterY);
+                scaleStrokeWidth(mCurrentScale);
                 break;
             case NONE:
                 mCurrentMatrix.reset();
@@ -164,13 +164,13 @@ public class PaintView extends View {
     }
 
     private void touchDown(float x, float y) {
-        mCurX = x;
-        mCurY = y;
+        mCurrentX = x;
+        mCurrentY = y;
     }
 
     private void touchMove(float x, float y) {
-        final float previousX = mCurX;
-        final float previousY = mCurY;
+        final float previousX = mCurrentX;
+        final float previousY = mCurrentY;
 
         final float dx = Math.abs(x - previousX);
         final float dy = Math.abs(y - previousY);
@@ -178,10 +178,10 @@ public class PaintView extends View {
         //两点之间的距离大于等于3时，生成贝塞尔绘制曲线
         if (dx >= 3 || dy >= 3) {
             if (!bPathDrawing) {
-                mCurPath = new Path();
-                mCurPath.moveTo(previousX, previousY);
+                mCurrentPath = new Path();
+                mCurrentPath.moveTo(previousX, previousY);
                 mDrawShapes.add(
-                        new DrawPath(mCurPath, getCurrentPaint()));
+                        new DrawPath(mCurrentPath, getCurrentPaint()));
                 bPathDrawing = true;
             }
 
@@ -190,16 +190,16 @@ public class PaintView extends View {
             float cY = (y + previousY) / 2;
 
             //二次贝塞尔，实现平滑曲线；previousX, previousY为操作点，cX, cY为终点
-            mCurPath.quadTo(previousX, previousY, cX, cY);
+            mCurrentPath.quadTo(previousX, previousY, cX, cY);
 
             //第二次执行时，第一次结束调用的坐标值将作为第二次调用的初始坐标值
-            mCurX = x;
-            mCurY = y;
+            mCurrentX = x;
+            mCurrentY = y;
         }
     }
 
     private void touchUp(float x, float y) {
-        if (!bPathDrawing && x == mCurX && y == mCurY) {
+        if (!bPathDrawing && x == mCurrentX && y == mCurrentY) {
             mDrawShapes.add(
                     new DrawPoint(x, y, getCurrentPaint()));
         }
@@ -215,7 +215,7 @@ public class PaintView extends View {
         mCenterX = (event.getX(0) + event.getX(1)) / 2;
         mCenterY = (event.getY(0) + event.getY(1)) / 2;
 
-        mLength = getDistance(event);
+        mCurrentLength = getDistance(event);
     }
 
     //两点移动
@@ -228,21 +228,21 @@ public class PaintView extends View {
         float curLength = getDistance(event);
 
         //拖动
-        if (Math.abs(mLength - curLength) < 5) {
+        if (Math.abs(mCurrentLength - curLength) < 5) {
             mode = MODE.DRAG;
-            mDistanceX = curCenterX - mCenterX;
-            mDistanceY = curCenterY - mCenterY;
+            mCurrentDistanceX = curCenterX - mCenterX;
+            mCurrentDistanceY = curCenterY - mCenterY;
         }
         //放大 || 缩小
-        else if (mLength < curLength || mLength > curLength){
+        else if (mCurrentLength < curLength || mCurrentLength > curLength){
             mode = MODE.ZOOM;
-            mScale = curLength / mLength;
+            mCurrentScale = curLength / mCurrentLength;
         }
 
         mCenterX = curCenterX;
         mCenterY = curCenterY;
 
-        mLength = curLength;
+        mCurrentLength = curLength;
     }
 
     /**
