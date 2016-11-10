@@ -14,6 +14,7 @@ import android.view.View;
 import com.lht.paintview.pojo.DrawPath;
 import com.lht.paintview.pojo.DrawPoint;
 import com.lht.paintview.pojo.DrawShape;
+import com.lht.paintview.pojo.DrawText;
 import com.lht.paintview.pojo.StrokePaint;
 
 import java.util.ArrayList;
@@ -46,6 +47,10 @@ public class PaintView extends View {
     //Paint List for Stroke
     //绘制笔迹Paint列表
     private ArrayList<StrokePaint> mPaintList = new ArrayList<>();
+
+    //
+    private boolean bTextDrawing = false;
+    private DrawText mCurrentText;
 
     //Background Image
     //背景图
@@ -140,6 +145,21 @@ public class PaintView extends View {
         }
     }
 
+    public void startText() {
+        bTextDrawing = true;
+        mCurrentText = new DrawText(getCurrentPaint());
+        mDrawShapes.add(mCurrentText);
+    }
+
+    public void changeText(String text) {
+        mCurrentText.setText(text);
+        invalidate();
+    }
+
+    public void endText() {
+        bTextDrawing = false;
+    }
+
     /**
      * Undo
      * 撤销
@@ -185,7 +205,7 @@ public class PaintView extends View {
      */
     public void setStrokeWidth(int width) {
         StrokePaint paint = new StrokePaint(getCurrentPaint());
-        paint.setWidth(width);
+        paint.setStrokeWidth(width);
         mPaintList.add(paint);
     }
 
@@ -350,10 +370,15 @@ public class PaintView extends View {
     }
 
     private void touchUp(float x, float y) {
-        if (!bPathDrawing && x == mCurrentX && y == mCurrentY) {
+        if (!bTextDrawing && !bPathDrawing && x == mCurrentX && y == mCurrentY) {
             mDrawShapes.add(
                     new DrawPoint(x, y, getCurrentPaint()));
         }
+
+        if (bTextDrawing && x == mCurrentX && y == mCurrentY) {
+            mCurrentText.setCoordinate(x, y);
+        }
+
         bPathDrawing = false;
 
         if (mOnDrawListener != null) {
@@ -400,7 +425,7 @@ public class PaintView extends View {
 
         mCurrentLength = curLength;
 
-        bDragEnable = mMainMatrixValues[Matrix.MSCALE_X] > 1;
+//        bDragEnable = mMainMatrixValues[Matrix.MSCALE_X] > 1;
     }
 
     /**

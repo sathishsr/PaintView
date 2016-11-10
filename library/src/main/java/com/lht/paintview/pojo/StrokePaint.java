@@ -8,12 +8,14 @@ import android.graphics.Paint;
 
 public class StrokePaint extends Paint {
 
+    //scale
+    //缩放
+    private float mScale = 1;
     //custom stroke width
     //笔迹宽度
-    private float mWidth = 1;
-    //custom stroke scale
-    //笔迹缩放
-    private float mScale = 1;
+    private float mStrokeWidth = super.getStrokeWidth();
+    //custom text size
+    private float mTextSize = 14;//TODO
     //actual stroke width: mWidth * mScale
     //实际笔迹宽度为 mWidth * mScale
 
@@ -23,28 +25,38 @@ public class StrokePaint extends Paint {
 
     public StrokePaint(StrokePaint paint) {
         super(paint);
-        mWidth = paint.getWidth();
         mScale = paint.getScale();
+        mStrokeWidth = paint.getStrokeWidth();
+        mTextSize = paint.getTextSize();
     }
 
     public float getScale() {
         return mScale;
     }
 
-    public void setScale(float mScale) {
-        this.mScale = mScale;
+    public void setScale(float scale) {
+        this.mScale = scale;
     }
 
-    public float getWidth() {
-        return mWidth;
+    public float getStrokeWidth() {
+        return mStrokeWidth;
     }
 
-    public void setWidth(float mWidth) {
-        this.mWidth = mWidth;
+    public void setStrokeWidth(float strokeWidth) {
+        this.mStrokeWidth = strokeWidth;
+    }
+
+    public float getTextSize() {
+        return mTextSize;
+    }
+
+    public void setTextSize(float mTextSize) {
+        this.mTextSize = mTextSize;
     }
 
     public StrokePaint setStrokeWidth() {
-        setStrokeWidth(mWidth * mScale);
+        super.setStrokeWidth(mStrokeWidth * mScale);
+        super.setTextSize(mTextSize * mScale);
 
         return this;
     }
